@@ -1,0 +1,22 @@
+{
+  "name": "SENTINEL Solar Intelligence",
+  "version": "1.1.0",
+  "slug": "sentinel",
+  "description": "AI-powered solar monitoring and loadshedding alerts. Connects your solar system to SENTINEL for proactive alerts and recommendations.",
+  "url": "https://sentinel-ai.co.za",
+  "arch": ["aarch64", "amd64", "armhf", "armv7", "i386"],
+  "startup": "application",
+  "boot": "auto",
+  "init": false,
+  "options": {
+    "telegram_chat_id": "",
+    "sentinel_api_key": ""
+  },
+  "schema": {
+    "telegram_chat_id": "str",
+    "sentinel_api_key": "str?"
+  },
+  "homeassistant_api": true,
+  "hassio_api": true,
+  "ingress": false
+}

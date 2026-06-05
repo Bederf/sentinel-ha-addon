@@ -1,0 +1,7 @@
+<<<<<<< HEAD
+paho-mqtt>=1.6.1
+httpx>=0.24.0
+=======
+aiohttp>=3.9.0
+paho-mqtt>=1.6.0
+>>>>>>> 46e0279 (Initial scaffold: SENTINEL HA Add-on v1.0.0)

@@ -60,11 +60,10 @@ async def register_with_sentinel(config: AddonOptions, entities: list[dict]) -> 
             for e in entities
         ],
         "platform": "home_assistant",
+        "sentinel_api_key": config.sentinel_api_key or None,
     }
 
     headers = {"Content-Type": "application/json"}
-    if config.sentinel_api_key:
-        headers["X-Sentinel-Api-Key"] = config.sentinel_api_key
 
     backoff = [5, 10, 20]
     for attempt, wait in enumerate(backoff, 1):

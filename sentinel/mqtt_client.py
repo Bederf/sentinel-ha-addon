@@ -1,62 +1,3 @@
-<<<<<<< HEAD
-"""
-MQTT client for SENTINEL broker.
-Connects, registers site, publishes EnergySnapshot.
-"""
-
-import json
-import logging
-from datetime import datetime, timezone
-from typing import Optional
-
-import paho.mqtt.client as mqtt
-
-logger = logging.getLogger(__name__)
-
-
-class EnergySnapshot:
-    """Normalized energy reading for MQTT publish."""
-    
-    def __init__(self, entity_id: str, metric_type: str, state: str, attributes: dict):
-        self.entity_id = entity_id
-        self.metric_type = metric_type
-        self.state = state
-        self.attributes = attributes
-        self.timestamp = datetime.now(timezone.utc).isoformat()
-    
-    def to_dict(self) -> dict:
-        return {
-            "entity_id": self.entity_id,
-            "metric_type": self.metric_type,
-            "value": self._parse_state(),
-            "unit": self._unit(),
-            "timestamp": self.timestamp,
-        }
-    
-    def _parse_state(self) -> float:
-        try:
-            return float(self.state)
-        except (ValueError, TypeError):
-            return 0.0
-    
-    def _unit(self) -> str:
-        units = {
-            "battery_soc_pct": "%",
-            "pv_power_w": "W",
-            "grid_power_w": "W",
-            "battery_power_w": "W",
-            "load_power_w": "W",
-            "battery_temp_c": "°C",
-            "battery_soh_pct": "%",
-        }
-        return units.get(self.metric_type, "")
-
-
-class SentinelMQTTClient:
-    """MQTT client for SENTINEL broker."""
-    
-    def __init__(self, host: str, port: int, client_id: str, site_id: str):
-=======
 from __future__ import annotations
 
 import asyncio
@@ -87,44 +28,10 @@ class SentinelMQTTClient:
         username: str = "",
         password: str = "",
     ):
->>>>>>> 46e0279 (Initial scaffold: SENTINEL HA Add-on v1.0.0)
         self.host = host
         self.port = port
         self.client_id = client_id
         self.site_id = site_id
-<<<<<<< HEAD
-        self.client = mqtt.Client(client_id=client_id)
-        self.client.on_connect = self._on_connect
-        self.client.on_disconnect = self._on_disconnect
-    
-    def _on_connect(self, client, userdata, flags, rc):
-        logger.info(f"MQTT connected with code {rc}")
-    
-    def _on_disconnect(self, client, userdata, rc):
-        logger.warning(f"MQTT disconnected with code {rc}")
-    
-    async def connect_and_register(self, entities: list[dict]):
-        """Connect to MQTT and register with SENTINEL API."""
-        try:
-            self.client.connect(self.host, self.port, keepalive=60)
-            self.client.loop_start()
-            
-            # Subscribe to own site topic for incoming commands
-            self.client.subscribe(f"sentinel/{self.site_id}/#", qos=1)
-            
-            logger.info(f"Connected to {self.host}:{self.port}")
-        except Exception as e:
-            logger.error(f"Failed to connect MQTT: {e}")
-            raise
-    
-    async def monitor_entities(self, entities: list[dict]):
-        """Subscribe to HA entity state changes and publish EnergySnapshots."""
-        # In production: subscribe to HA state change events via Supervisor API websocket
-        # For v1: poll periodically
-        import asyncio
-        while True:
-            for entity in entities:
-=======
         self._username = username
         self._password = password
         self._retry_count = 0
@@ -190,18 +97,12 @@ class SentinelMQTTClient:
         while True:
             for entity in entities:
                 parsed = self._parse_state(entity.get("state", "0"), entity["metric_type"])
->>>>>>> 46e0279 (Initial scaffold: SENTINEL HA Add-on v1.0.0)
                 snapshot = EnergySnapshot(
                     entity_id=entity["entity_id"],
                     metric_type=entity["metric_type"],
                     state=entity.get("state", "0"),
                     attributes=entity.get("attributes", {}),
                 )
-<<<<<<< HEAD
-                topic = f"sentinel/{self.site_id}/{entity['metric_type']}"
-                self.client.publish(topic, json.dumps(snapshot.to_dict()), qos=1)
-            await asyncio.sleep(30)  # Poll every 30s
-=======
                 topic = f"sentinel/{self.site_id}/energy/{entity['metric_type']}"
                 self.client.publish(
                     topic,
@@ -301,4 +202,3 @@ if __name__ == "__main__":
         await client.monitor_entities(entities)
 
     asyncio.run(test())
->>>>>>> 46e0279 (Initial scaffold: SENTINEL HA Add-on v1.0.0)

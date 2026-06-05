@@ -1,61 +1,3 @@
-<<<<<<< HEAD
-"""
-SENTINEL HA Add-on — Main service
-Reads options.json, discovers entities, publishes EnergySnapshot via MQTT.
-"""
-
-import asyncio
-import json
-import sys
-import logging
-from typing import Optional
-
-logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s')
-logger = logging.getLogger(__name__)
-
-
-class AddonOptions:
-    """Validated addon configuration from /data/options.json"""
-    def __init__(self, opts: dict):
-        required = ['sentinel_host', 'telegram_chat_id', 'mqtt_host', 'mqtt_port']
-        missing = [f for f in required if f not in opts or not opts[f]]
-        if missing:
-            raise ValueError(f"FATAL: Missing required fields: {missing}")
-        self.sentinel_host: str = opts['sentinel_host']
-        self.telegram_chat_id: str = opts['telegram_chat_id']
-        self.mqtt_host: str = opts['mqtt_host']
-        self.mqtt_port: int = int(opts['mqtt_port'])
-        logger.info(f"Addon configured for site {self.telegram_chat_id}")
-
-
-async def main():
-    # Load and validate options
-    try:
-        with open('/data/options.json') as f:
-            opts = json.load(f)
-        config = AddonOptions(opts)
-    except Exception as e:
-        logger.error(str(e))
-        sys.exit(1)
-    
-    logger.info("Starting SENTINEL HA Add-on...")
-    
-    # Import after options validated
-    from entity_discovery import EntityDiscovery
-    from mqtt_client import SentinelMQTTClient
-    
-    # Discover entities via HA Supervisor API
-    discovery = EntityDiscovery()
-    entities = await discovery.discover_all(max_retries=3, backoff=[2, 4, 8])
-    
-    if not entities:
-        logger.error("No solar/battery entities found. Check HA entity names.")
-        sys.exit(1)
-    
-    logger.info(f"Discovered {len(entities)} entities: {[e['entity_id'] for e in entities]}")
-    
-    # Connect MQTT and register
-=======
 from __future__ import annotations
 
 import asyncio
@@ -182,26 +124,16 @@ async def main():
         logger.error("Could not register with SENTINEL backend")
         sys.exit(1)
 
->>>>>>> 46e0279 (Initial scaffold: SENTINEL HA Add-on v1.0.0)
     client = SentinelMQTTClient(
         host=config.mqtt_host,
         port=config.mqtt_port,
         client_id=f"sentinel-ha-{config.telegram_chat_id}",
         site_id=config.telegram_chat_id,
-<<<<<<< HEAD
-    )
-    
-    await client.connect_and_register(entities)
-    logger.info("MQTT connected and registered")
-    
-    # Start entity monitoring loop
-=======
         username=config.mqtt_username,
         password=config.mqtt_password,
     )
 
     await client.connect_and_register(entities)
->>>>>>> 46e0279 (Initial scaffold: SENTINEL HA Add-on v1.0.0)
     await client.monitor_entities(entities)
 
 

@@ -1,13 +1,12 @@
 from __future__ import annotations
 
-import json
 import logging
+import os
 
 import aiohttp
 
 logger = logging.getLogger(__name__)
 
-HA_TOKEN_PATH = "/data/options.json"
 SUPERVISOR_TOKEN_PATH = "/data/supervisor_token"
 
 _SOLAR_ENTITY_PATTERNS = {
@@ -62,6 +61,9 @@ class EntityDiscovery:
         self._ha_token: str | None = None
 
     def _read_supervisor_token(self) -> str | None:
+        token = os.environ.get("SUPERVISOR_TOKEN")
+        if token:
+            return token.strip()
         try:
             with open(SUPERVISOR_TOKEN_PATH) as f:
                 return f.read().strip()

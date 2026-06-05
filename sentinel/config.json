@@ -1,0 +1,26 @@
+{
+  "name": "SENTINEL Solar Intelligence",
+  "version": "1.0.0",
+  "slug": "sentinel",
+  "description": "AI-powered solar monitoring and loadshedding alerts",
+  "arch": ["aarch64", "amd64", "armhf", "armv7", "i386"],
+  "startup": "application",
+  "boot": "auto",
+  "options": {
+    "telegram_chat_id": "",
+    "mqtt_host": "",
+    "mqtt_port": 1883,
+    "mqtt_username": "",
+    "mqtt_password": ""
+  },
+  "schema": {
+    "telegram_chat_id": "str",
+    "mqtt_host": "str",
+    "mqtt_port": "int",
+    "mqtt_username": "str",
+    "mqtt_password": "str"
+  },
+  "homeassistant_api": true,
+  "hassio_api": true,
+  "ingress": false
+}

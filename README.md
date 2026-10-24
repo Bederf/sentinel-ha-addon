@@ -1,151 +1,133 @@
-# SENTINEL Solar Intelligence — Home Assistant Add-on
+# SENTINEL Solar Intelligence for Home Assistant
 
-AI-powered solar monitoring and loadshedding alerts for South Africa.
+Monitor your home energy system and turn Home Assistant solar data into useful, plain-language alerts.
 
-Connects your Home Assistant solar entities to SENTINEL for proactive alerts, battery longevity insights, Eskom loadshedding-aware recommendations, and plain-language Telegram notifications.
+SENTINEL Solar Intelligence is a Home Assistant add-on for South African solar and battery setups. It discovers relevant entities, publishes structured energy snapshots and connects them to the SENTINEL notification and intelligence layer.
 
----
+> **Home Assistant → entity discovery → energy snapshots → SENTINEL intelligence → notifications**
+
+## What it does
+
+- Discovers solar, battery, grid, load, geyser and EV-charger entities
+- Normalises readings into stable metric types
+- Publishes retained energy snapshots over MQTT
+- Uses the Home Assistant Supervisor API and websocket events
+- Falls back to periodic polling when event streaming is unavailable
+- Supports SENTINEL alerts and recommendations through the optional cloud connection
+
+## Why it is useful
+
+South African homes have a very specific energy problem: solar generation, battery health, grid availability and loadshedding all affect one another.
+
+This add-on creates a small, reliable bridge between the energy data already available in Home Assistant and higher-level monitoring or notification workflows.
 
 ## Requirements
 
-- Home Assistant OS or Supervised (add-on system required)
-- Solar entities exposed in HA (PV power, battery SOC, grid power, load power)
-- Telegram account for alerts
+- Home Assistant OS or a Supervised installation
+- Home Assistant entities for the energy metrics you want to monitor
+- A Telegram account if you want Telegram notifications
+- A SENTINEL account/API key for cloud alerts and recommendations
 
----
+## Install
 
-## Installation
+1. Open **Settings → Add-ons → Add-on Store**.
+2. Open the **⋮** menu and choose **Repositories**.
+3. Add:
 
-1. Go to **Settings → Add-ons → Add-on Store**
-2. Tap the **⋮** menu (top-right) → **Repositories**
-3. Add: `https://github.com/Bederf/sentinel-ha-addon`
-4. Close the dialog
-5. Scroll down or search for **SENTINEL Solar Intelligence**
-6. Tap **Install** (allow a few minutes for the build)
+   ```text
+   https://github.com/Bederf/sentinel-ha-addon
+   ```
 
----
+4. Install **SENTINEL Solar Intelligence**.
+5. Configure the add-on and start it.
+
+The repository is compatible with the Home Assistant add-on model and supports common Home Assistant architectures through the add-on build configuration.
 
 ## Configuration
 
-### Step 1: Get your Telegram Chat ID
+The add-on exposes two options:
 
-Talk to [@userinfobot](https://t.me/userinfobot) on Telegram. Send `/start` — it replies with your numeric ID.
+| Option | Required | Description |
+|---|---:|---|
+| `telegram_chat_id` | Yes | Telegram chat identifier used to associate the installation with notifications. |
+| `sentinel_api_key` | No | Optional key for an enabled SENTINEL cloud account. |
 
-### Step 2: Configure the add-on
+Create the Telegram chat ID by messaging [@userinfobot](https://t.me/userinfobot) and sending `/start`.
 
-Go to the **Configuration** tab and set:
+Do not put MQTT passwords, service credentials or production connection strings in this repository. They are provisioned by the add-on registration flow or Home Assistant configuration.
 
-| Field | Required | Description |
-|-------|----------|-------------|
-| `telegram_chat_id` | ✅ Yes | Your numeric Telegram ID from @userinfobot |
-| `sentinel_api_key` | ❌ No | Leave blank for free tier. See [Tiers](#tiers) below. |
+## Entities discovered
 
-### Step 3: Start the add-on
+The add-on matches entity IDs by keyword and maps them to stable metric types:
 
-Tap **Start**. Check the **Log** tab for progress:
+| Entity type | Examples |
+|---|---|
+| Solar/PV power | `sensor.pv_power`, `sensor.solar_power` |
+| Battery state and power | `sensor.battery_soc`, `sensor.battery_power` |
+| Grid and load | `sensor.grid_power`, `sensor.load_power`, `sensor.grid_voltage` |
+| Geyser | `switch.geyser`, `sensor.geyser_power` |
+| EV charging | `sensor.ev_charger_power` |
 
-```
-SENTINEL HA Add-on starting
-Discovered 6 entities
-Registered with SENTINEL: site_id=res-123456789 tier=free
-MQTT connected to bms.sentinel-ai.co.za:1883
-```
+Entity IDs must use lowercase Home Assistant naming. Non-standard names may need an additional mapping before they are discovered.
 
-Once registered, you'll receive a Telegram confirmation from @Sentinelaihomebot.
+## Data flow
 
----
-
-## Tiers
-
-### Free
-- AEGIS critical alerts (battery critical, inverter fault, overtemp)
-- Eskom loadshedding alerts for your area
-- Connection health monitoring
-
-### Paid
-Everything in Free, plus:
-- AI-powered daily recommendations (e.g., "Switch geyser off — Stage 4 starts in 45min")
-- Morning summary with yesterday's generation, consumption, and estimated ZAR savings
-- Battery longevity tracking
-- Priority support
-
-To upgrade: set `sentinel_api_key` in Configuration and restart. Keys are available from SENTINEL.
-
----
-
-## What Gets Monitored
-
-The add-on automatically discovers these entities from your HA installation:
-
-| Metric | HA Entity Type | Example |
-|--------|---------------|---------|
-| PV Power | `sensor` | `sensor.solaredge_current_power` |
-| Battery SOC | `sensor` | `sensor.solaredge_battery_soc` |
-| Battery Power | `sensor` | `sensor.solaredge_battery_power` |
-| Grid Power | `sensor` | `sensor.solaredge_grid_power` |
-| Load Power | `sensor` | `sensor.solaredge_house_consumption` |
-| Grid Voltage | `sensor` | `sensor.solaredge_grid_voltage` |
-| Geyser State | `switch` | `switch.geyser` |
-| Geyser Power | `sensor` | `sensor.geyser_power` |
-| EV Charger Power | `sensor` | `sensor.ev_charger_power` |
-
-Entities are matched by keyword in the entity ID (e.g., `pv_power`, `battery_soc`, `grid_power`).
-
----
-
-## Data Flow
-
-```
-HA → Supervisor API → SENTINEL Add-on → MQTT → SENTINEL Cloud → Telegram
+```text
+Home Assistant
+      ↓ Supervisor API / websocket
+SENTINEL add-on
+      ↓ MQTT energy topics
+SENTINEL intelligence layer
+      ↓
+Alerts, summaries and recommendations
 ```
 
-Entity states are published every 30 seconds via MQTT over TLS. When an entity changes state in HA, the add-on picks it up in real-time via the Supervisor websocket.
+The add-on is responsible for discovery and telemetry publishing. Account-specific alerts, recommendations and any optional control workflows belong to the configured SENTINEL service and are not hard-coded into the local add-on.
 
----
+## Local development
 
-## Commands
+The add-on normally runs inside Home Assistant because it relies on Supervisor APIs and the mounted supervisor token. The Python modules can still be tested locally with a virtual environment:
 
-Once connected, talk to @Sentinelaihomebot on Telegram:
-
-| Command | Description |
-|---------|-------------|
-| `/status` | Current solar readings |
-| `/setarea` | Configure Eskom loadshedding area |
-| `/devices` | List available controllable devices |
-| `/control geyser on` | Turn geyser on |
-| `/control geyser off` | Turn geyser off |
-| `/disconnect` | Remove your system from SENTINEL |
-
----
+```bash
+python3 -m venv .venv
+. .venv/bin/activate
+pip install -r sentinel/requirements.txt pytest
+PYTHONPATH=sentinel pytest -q sentinel/test_addon.py
+```
 
 ## Troubleshooting
 
-**Add-on won't start:**
-Check the Log tab. Common issues:
-- `telegram_chat_id` not set → set it in Configuration
-- No solar entities found → verify HA has solar sensors
-- Registration failed → check network connectivity
+**No entities found**
 
-**No Telegram alerts:**
-- Verify your chat ID is correct
-- Check the add-on logs for "Registered with SENTINEL"
-- Send `/start` to @Sentinelaihomebot to wake it up
+- Confirm the add-on has Home Assistant API access.
+- Check that entity IDs contain supported keywords such as `pv_power`, `battery_soc`, `grid_power` or `load_power`.
+- Review the add-on log for discovery errors.
 
-**Entities not detected:**
-The add-on matches by keywords in entity IDs. If your entities use non-standard names, they may not be picked up. Check the logs for "Discovered N entities" — if 0, your entity IDs may need renaming.
+**Registration fails**
 
----
+- Confirm network access from Home Assistant.
+- Check that the Telegram chat ID is correct.
+- If using a paid or private SENTINEL account, verify the API key through the account’s secure configuration path.
 
-## Uninstall
+**Updates are delayed**
 
-1. Stop the add-on
-2. Send `/disconnect` to @Sentinelaihomebot
-3. Uninstall from the Add-on Store
-4. Optional: remove the repository from Settings → Add-ons → Repositories
+- The add-on uses Home Assistant events when available.
+- If the Supervisor websocket is unavailable, it falls back to periodic polling.
 
----
+## Project status
 
-## Repository
+This is a focused integration project, not the complete SENTINEL platform. The public repository contains the Home Assistant bridge and its tests; the broader SENTINEL intelligence platform remains separately developed.
 
-Source: https://github.com/Bederf/sentinel-ha-addon
-Issues: https://github.com/Bederf/sentinel-ha-addon/issues
+## Contributing
+
+Useful contributions include new entity-name mappings, improved validation, Home Assistant compatibility fixes, tests and clearer diagnostics. Please include the Home Assistant version, add-on version, entity examples and logs when reporting an issue.
+
+## Links
+
+- [SENTINEL](https://github.com/Bederf/sentinel-ai)
+- [Issue tracker](https://github.com/Bederf/sentinel-ha-addon/issues)
+- [Home Assistant add-ons documentation](https://www.home-assistant.io/addons/)
+
+## License
+
+See the repository license and add-on metadata for distribution terms.

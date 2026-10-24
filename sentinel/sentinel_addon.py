@@ -31,7 +31,7 @@ class AddonOptions:
         self.tier: str = "free"
 
         if not self.telegram_chat_id:
-            raise ValueError("FATAL: telegram_chat_id is required")
+            raise ValueError("Missing required fields: telegram_chat_id")
 
         logger.info("Addon configured for chat_id=%s tier=%s", self.telegram_chat_id, "paid" if self.sentinel_api_key else "free")
 

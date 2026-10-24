@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import os
+import re
 
 import aiohttp
 
@@ -54,6 +55,15 @@ _METRIC_TYPE_MAP = {
     "geyser": "geyser_state",
     "ev_charger_power": "ev_charger_power_w",
 }
+
+
+def validate_entity_id(entity_id: str) -> bool:
+    """Validate a Home Assistant entity ID before it enters the pipeline."""
+    return bool(
+        isinstance(entity_id, str)
+        and len(entity_id) <= 64
+        and re.fullmatch(r"(?:sensor|switch|binary_sensor)\.[a-z0-9_]+", entity_id)
+    )
 
 
 class EntityDiscovery:
